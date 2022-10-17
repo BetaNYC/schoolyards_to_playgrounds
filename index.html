@@ -13,6 +13,7 @@
       integrity="sha256-o9N1jGDZrf5tS+Ft4gbIK7mYMipq9lqpVJ91xHSyKhg="
       crossorigin=""
     ></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <link
       href="https://fonts.googleapis.com/css?family=Open+Sans&amp;display=swap"
       rel="stylesheet"
@@ -36,7 +37,18 @@
 
       #legend {
         display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+      }
+
+      .col {
+        display: flex;
         flex-direction: column;
+      }
+
+      .icon{
+          width: auto;
+          height: 1rem;
       }
 
       .triangle {
@@ -64,6 +76,13 @@
         /* border: 1px solid #fff; */
       }
 
+      .buffer {
+        width: 0.8em;
+        height: 0.8em;
+        display: inline-block;
+        margin-right: 0.2rem;
+      }
+
       .leaflet-popup-content p {
         margin: 0.5rem 0;
       }
@@ -78,32 +97,54 @@
   <body>
     <main>
       <div id="legend">
-        <label class="checkbox"
-          ><input type="checkbox" checked data-layer="isInProgram" />
-          <span
-            style="background-color: #084eff; width: 0.8em; height: 0.8em"
-            class="circle-1"
-          ></span
-          >Schoolyard in program</label
-        >
+        <div class="col">
+          <label class="checkbox"
+            ><input type="checkbox" checked data-layer="isInProgram" />
+            <span
+              style="background-color: #084eff; width: 0.8em; height: 0.8em"
+              class="circle-1"
+            ></span
+            >Schoolyard in program</label
+          >
 
-        <label class="checkbox"
-          ><input type="checkbox" checked data-layer="notInProgram" />
-          <span style="width: 0.8em; height: 0.8em">
-            <svg class="triangle" viewBox="0 0 100 100">
-              <polygon fill="#f9466b" points="50 15, 100 100, 0 100" />
-            </svg> </span
-          >Schoolyard in <strong>NOT</strong> program</label
-        >
+          <label class="checkbox"
+            ><input type="checkbox" checked data-layer="notInProgram" />
+            <span style="width: 0.8em; height: 0.8em">
+              <svg class="triangle" viewBox="0 0 100 100">
+                <polygon fill="#f9466b" points="50 15, 100 100, 0 100" />
+              </svg> </span
+            >Schoolyard in <strong>NOT</strong> program</label
+          >
 
-        <label class="checkbox"
-          ><input type="checkbox" data-layer="playgrounds" />
-          <span
-            style="background-color: #007600; width: 0.4em; height: 0.4em"
-            class="circle-2"
-          ></span
-          >NYC Parks Playground</label
-        >
+          <label class="checkbox"
+            ><input type="checkbox" data-layer="playgrounds" />
+            <span
+              style="background-color: #007600; width: 0.4em; height: 0.4em"
+              class="circle-2"
+            ></span
+            >NYC Parks Playground</label
+          >
+        </div>
+        <div class="col">
+            <h4 style="margin: 0;">Within 5 mins <img class="icon" src="walking.png" alt="walking">(1/4 mile)</h4>
+          <label class="checkbox"
+            ><input type="checkbox" checked data-layer="isInProgramBuffer" />
+            <span
+              style="background-color: #9bb5f3;"
+              class="buffer"
+            ></span
+            >Schoolyard in program</label
+          >
+
+          <label class="checkbox"
+            ><input type="checkbox" checked data-layer="notInProgramBuffer" />
+            <span
+              style="background-color: #ffbfcc;"
+              class="buffer"
+            ></span
+            >Schoolyard in <strong>NOT</strong> program</label
+          >
+        </div>
       </div>
       <div id="map"></div>
     </main>
@@ -244,6 +285,44 @@
         },
       }); //.addTo(map);
 
+      //buffers
+      let isInProgramBuffer = L.geoJSON(
+        turf.dissolve(
+          turf.buffer(json_isInProgram_0, 0.25, { units: "miles" })
+        ),
+        {
+          style: {
+            weight: 2,
+            opacity: 1,
+            color: "white",
+            fillColor: "#5d8afc",
+            dashArray: "3",
+            fillOpacity: 0.2,
+          },
+        }
+      );
+
+      //fix issue with buffer not working with an invaild geom
+      const notInSub = {
+        type: "FeatureCollection",
+        features: json_hasSchoolYardNotInProgramActual_3.features.filter(
+          (i) => i.geometry
+        ),
+      };
+      let notInProgramBuffer = L.geoJSON(
+        turf.dissolve(turf.buffer(notInSub, 0.25, { units: "miles" })),
+        {
+          style: {
+            weight: 2,
+            opacity: 1,
+            color: "white",
+            fillColor: "#f9466b",
+            dashArray: "3",
+            fillOpacity: 0.2,
+          },
+        }
+      );
+
       let baseMaps = {
         "Carto Base Map": baseMap,
       };
@@ -252,6 +331,8 @@
         isInProgram: isInProgram,
         notInProgram: notInProgram,
         playgrounds: playgrounds,
+        isInProgramBuffer: isInProgramBuffer,
+        notInProgramBuffer: notInProgramBuffer,
       };
 
       //   let layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
@@ -262,7 +343,7 @@
       //reset inputs - refreshing doesn't reset them
       Array.from(inputs).forEach((input) => {
         const layer = input.dataset.layer;
-        if (layer !== "playgrounds") {
+        if (["isInProgram", "notInProgram"].includes(layer)) {
           input.checked = true;
         } else {
           input.checked = false;
