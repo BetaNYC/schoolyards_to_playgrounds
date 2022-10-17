@@ -13,18 +13,98 @@
       integrity="sha256-o9N1jGDZrf5tS+Ft4gbIK7mYMipq9lqpVJ91xHSyKhg="
       crossorigin=""
     ></script>
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans&amp;display=swap"
+      rel="stylesheet"
+    />
     <style>
       main {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
+        display: flex;
+        flex-direction: column;
+        margin: 20px auto;
+        max-width: 1500px;
+        color: #444;
+        padding: 0 25px;
+        font-family: "Open Sans", sans-serif !important;
+        position: relative;
+      }
+
+      #map {
+        width: 100%;
+        height: 80vh;
+      }
+
+      #legend {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .triangle {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        height: inherit;
+        width: inherit;
+        display: inherit;
+        transform: rotate(180deg);
+      }
+
+      .circle-1 {
+        border-radius: 16px;
+        display: inline-block;
+        margin-right: 0.3rem;
+        margin-left: 0.05rem;
+        /* border: 1px solid #fff; */
+      }
+
+      .circle-2 {
+        border-radius: 16px;
+        display: inline-block;
+        margin-right: 0.5rem;
+        margin-left: 0.3rem;
+        margin-bottom: 0.2em;
+        /* border: 1px solid #fff; */
+      }
+
+      .leaflet-popup-content p {
+        margin: 0.5rem 0;
+      }
+
+      .not-highlight {
+        background-color: #ff214f;
+        color: white;
+        font-weight: 600;
       }
     </style>
   </head>
   <body>
     <main>
+      <div id="legend">
+        <label class="checkbox"
+          ><input type="checkbox" />
+          <span
+            style="background-color: #084eff; width: 0.8em; height: 0.8em"
+            class="circle-1"
+          ></span
+          >Schoolyard in program</label
+        >
+
+        <label class="checkbox"
+          ><input type="checkbox" />
+          <span style="width: 0.8em; height: 0.8em">
+            <svg class="triangle" viewBox="0 0 100 100">
+              <polygon fill="#f9466b" points="50 15, 100 100, 0 100" />
+            </svg> </span
+          >Schoolyard in <strong>NOT</strong> program</label
+        >
+
+        <label class="checkbox"
+          ><input type="checkbox" />
+          <span
+            style="background-color: #007600; width: 0.4em; height: 0.4em"
+            class="circle-2"
+          ></span
+          >NYC Parks Playground</label
+        >
+      </div>
       <div id="map"></div>
     </main>
 
@@ -54,11 +134,14 @@
       // }
       // ).addTo(map);
 
-      const map = L.map("map").setView([40.7074, -74.003], 11);
+      const map = L.map("map").setView([40.7831, -73.949], 13);
 
       let baseMap = L.tileLayer(
-        "https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png",
+        "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
         {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: "abcd",
           maxZoom: 20,
           minZoom: 11,
           bounds: L.latLngBounds(
@@ -71,25 +154,17 @@
       ).addTo(map);
 
       // you can't see them markers with this code
-      // function createMarker(feature, latlng) {
-      //     const style = `
-      //         background-color:${feature.properties.color};
-      //         border-radius: 0.2em;
-      //         margin-right: 0.2em;
-      //         border: 1px solid #FFF;
-      //         height: inherit;
-      //         width: inherit;
-      //         display: inherit;
-      //     `;
-
-      //     const icon = L.divIcon({
-      //         className: 'leaflet-icon',
-      //         html: `<span style='${style}'></span>`,
-      //         iconSize: [8, 8],
-      //         iconAnchor: [5, 5]
-      //     });
-      //     return L.marker(latlng, { icon });
-      // }
+      function createTriangleMarker(feature, latlng) {
+        const icon = L.divIcon({
+          className: "leaflet-icon",
+          html: `<svg class="triangle" viewBox="0 0 100 100">
+            	<polygon fill="#f9466b" points="50 15, 100 100, 0 100"/>
+                </svg>`,
+          iconSize: [12, 12],
+          iconAnchor: [0, 0],
+        });
+        return L.marker(latlng, { icon });
+      }
 
       // let layer = L.geoJSON(json_isInProgram_0.features, {
       //     pointToLayer: createMarker,
@@ -104,59 +179,55 @@
       //         }
       //     }).addTo(map);
 
-      let notInProgramMarkerStyle = {
-        radius: 3,
-        fillColor: "#FF7F50",
-        color: "#000",
-        weight: 1,
-        opacity: 1,
-        fillOpacity: 0.8,
-      };
-
       let isInProgramMarkerStyle = {
-        radius: 3,
-        fillColor: "#008080",
+        radius: 5,
+        fillColor: "#084eff",
         color: "#000",
-        weight: 1,
+        weight: 0,
         opacity: 1,
         fillOpacity: 0.8,
       };
 
       let playgroundsMarkerStyle = {
-        radius: 3,
-        fillColor: "#FFD700",
+        radius: 2,
+        fillColor: "#007600",
         color: "#000",
-        weight: 1,
+        weight: 0,
         opacity: 1,
         fillOpacity: 0.8,
       };
+
+      function createSchoolPopup(feature, layer) {
+        if (feature.properties && feature.properties.Primary_Address) {
+          return layer.bindPopup(
+            `<h4>${feature.properties.Buidling_Name}</h4>
+                <p><a target="_blank" href="http://maps.google.com/?q=${
+                  feature.properties.Primary_Address
+                };near=new+york">${feature.properties.Primary_Address}</a></p>
+                ${
+                  +feature.properties.isInProgram
+                    ? "<p>A part of the Schoolyards to Playgrounds program</p>"
+                    : "<p><span class='not-highlight'>NOT</span> a part of the Schoolyards to Playgrounds program</p>"
+                }
+                `,
+            {
+              autoPan: false,
+              offset: L.point(0, 0),
+            }
+          );
+        }
+      }
 
       let isInProgram = L.geoJSON(json_isInProgram_0.features, {
         pointToLayer: function (feature, latlng) {
           return L.circleMarker(latlng, isInProgramMarkerStyle);
         },
-        onEachFeature: (feature, layer) => {
-          if (feature.properties && feature.properties.Primary_Address) {
-            layer.bindPopup(feature.properties.Primary_Address, {
-              autoPan: false,
-              offset: L.point(0, 0),
-            });
-          }
-        },
+        onEachFeature: createSchoolPopup,
       }).addTo(map);
 
       let notInProgram = L.geoJSON(json_hasSchoolYardNotInProgramActual_3, {
-        pointToLayer: function (feature, latlng) {
-          return L.circleMarker(latlng, notInProgramMarkerStyle);
-        },
-        onEachFeature: (feature, layer) => {
-          if (feature.properties && feature.properties.Primary_Address) {
-            layer.bindPopup(feature.properties.Primary_Address, {
-              autoPan: false,
-              offset: L.point(0, 0),
-            });
-          }
-        },
+        pointToLayer: createTriangleMarker,
+        onEachFeature: createSchoolPopup,
       }).addTo(map);
 
       let playgrounds = L.geoJSON(json_playgrounds_coords_7, {
@@ -183,17 +254,7 @@
         Playgrounds: playgrounds,
       };
 
-      let layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
-
-      // can't see markers with createMarker
-      // L.geoJSON(json_isInProgram_0.features, {
-      //     pointToLayer: createMarker
-      // }).addTo(map);
-
-      // invalidation.then(() => map.remove());
-
-      // do I need to make map an object and return this in order for the code to work?
-      // return map;
+      //   let layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
     </script>
   </body>
 </html>
