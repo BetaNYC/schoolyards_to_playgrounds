@@ -79,7 +79,7 @@
     <main>
       <div id="legend">
         <label class="checkbox"
-          ><input type="checkbox" />
+          ><input type="checkbox" checked data-layer="isInProgram" />
           <span
             style="background-color: #084eff; width: 0.8em; height: 0.8em"
             class="circle-1"
@@ -88,7 +88,7 @@
         >
 
         <label class="checkbox"
-          ><input type="checkbox" />
+          ><input type="checkbox" checked data-layer="notInProgram" />
           <span style="width: 0.8em; height: 0.8em">
             <svg class="triangle" viewBox="0 0 100 100">
               <polygon fill="#f9466b" points="50 15, 100 100, 0 100" />
@@ -97,7 +97,7 @@
         >
 
         <label class="checkbox"
-          ><input type="checkbox" />
+          ><input type="checkbox" data-layer="playgrounds" />
           <span
             style="background-color: #007600; width: 0.4em; height: 0.4em"
             class="circle-2"
@@ -242,19 +242,41 @@
             });
           }
         },
-      }).addTo(map);
+      }); //.addTo(map);
 
       let baseMaps = {
         "Carto Base Map": baseMap,
       };
 
       let overlayMaps = {
-        "In Program": isInProgram,
-        "Not In Program": notInProgram,
-        Playgrounds: playgrounds,
+        isInProgram: isInProgram,
+        notInProgram: notInProgram,
+        playgrounds: playgrounds,
       };
 
       //   let layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+      //logic for legend inputs
+      const inputs = document.querySelectorAll("#legend input");
+
+      //reset inputs - refreshing doesn't reset them
+      Array.from(inputs).forEach((input) => {
+        const layer = input.dataset.layer;
+        if (layer !== "playgrounds") {
+          input.checked = true;
+        } else {
+          input.checked = false;
+        }
+      });
+
+      //for each input add listen for change to toggle based on checked
+      Array.from(inputs).forEach((input) => {
+        input.addEventListener("change", (e) => {
+          const checked = e.target.checked;
+          const layer = overlayMaps[e.target.dataset.layer];
+          checked ? map.addLayer(layer) : map.removeLayer(layer);
+        });
+      });
     </script>
   </body>
 </html>
