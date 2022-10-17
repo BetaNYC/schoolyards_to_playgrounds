@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <!-- <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" /> -->
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.2/dist/leaflet.css"
@@ -46,6 +46,7 @@
       #legend {
         display: flex;
         flex-direction: row;
+        flex-wrap: wrap;
         justify-content: space-around;
         margin-bottom: 1rem;
       }
@@ -138,7 +139,13 @@
           >
         </div>
         <div class="col">
-          <h4 style="margin: 0">
+          <h4
+            style="
+              margin: 0.1rem 0 0 0;
+              padding-top: 0.1rem;
+              border-top: solid 1px rgba(100, 100, 100, 0.2);
+            "
+          >
             Within 5 mins
             <img class="icon" src="walking.png" alt="walking" />(1/4 mile)
           </h4>
@@ -156,6 +163,21 @@
         </div>
       </div>
       <div id="map"></div>
+      <p style="font-size: small">
+        Data Sources:
+        <a
+          href="https://data.cityofnewyork.us/dataset/Schoolyard-to-Playgrounds/dbmp-698d"
+          >Schoolyard to Playgrounds</a
+        >,<a
+          href="https://data.cityofnewyork.us/Environment/Directory-of-Playgrounds/59gn-q4ai"
+          >Playgrounds</a
+        >
+        #OpenData. Read more about the previous Schoolyards to Playgrounds
+        program
+        <a href="https://www.nycgovparks.org/greening/planyc/schoolyards"
+          >here</a
+        >
+      </p>
     </main>
 
     <script src="data/isInProgram_0.js"></script>
@@ -211,7 +233,7 @@
             	<polygon fill="#f9466b" points="50 15, 100 100, 0 100"/>
                 </svg>`,
           iconSize: [12, 12],
-          iconAnchor: [6,12],
+          iconAnchor: [6, 12],
         });
         return L.marker(latlng, { icon });
       }
